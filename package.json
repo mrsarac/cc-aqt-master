@@ -1,0 +1,59 @@
+{
+  "name": "cc-aqt-master",
+  "version": "0.1.0-alpha",
+  "description": "Claude Code Advanced Query Toolkit - Optimize human-AI interaction through intelligent question refinement and resource tracking",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "aqt": "dist/index.js"
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --format=esm --external:chalk --external:commander --external:ora --external:zod",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write 'src/**/*.ts'",
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai",
+    "llm",
+    "prompt-engineering",
+    "developer-tools",
+    "cli"
+  ],
+  "author": "NeuraByte Labs <hello@neurabytelabs.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrsarac/cc-aqt-master.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mrsarac/cc-aqt-master/issues"
+  },
+  "homepage": "https://github.com/mrsarac/cc-aqt-master#readme",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "cosmiconfig": "^9.0.0",
+    "ora": "^8.0.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "esbuild": "^0.21.5",
+    "eslint": "^9.5.0",
+    "prettier": "^3.3.2",
+    "tsx": "^4.15.6",
+    "typescript": "^5.5.2",
+    "vitest": "^1.6.0"
+  }
+}
