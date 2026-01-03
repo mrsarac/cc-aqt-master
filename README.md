@@ -1,147 +1,243 @@
 # CC-AQT-MASTER
 
-> **Claude Code Advanced Query Toolkit**
-> Optimize human-AI interaction through intelligent question refinement and resource tracking.
+Claude Code Advanced Query Toolkit - Token tracking and intelligent question refinement for Claude Code.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
-
----
-
-## The Problem
-
-When working with Claude Code, inefficient interactions waste resources:
-
-- **3.2 average questions** per task (could be 1.1)
-- **120 seconds** user decision time (could be 15s)
-- **40% token overhead** from context pollution
-- **Lost productivity** from cognitive context switching
-
-## The Solution
-
-CC-AQT-MASTER introduces the **Recursive Master Prompt Sieve**:
-
-```
-Raw Question: "What database should I use?"
-                    |
-                    v
-            +---------------+
-            | MASTER SIEVE  |
-            +---------------+
-                    |
-                    v
-Refined Question:
----
-**Context:** Analyzing your project's docker-compose.yml - no external
-database service found. Node.js project in MVP phase.
-
-**Options:**
-- **A: SQLite** - Zero config, file-based. Impact: Low complexity, not scalable.
-- **B: PostgreSQL** - Add docker service. Impact: +50MB, production-ready.
-- **C: In-memory** - Testing only. Impact: Data loss on restart.
-
-**Recommendation:** Option A for MVP, migrate to B pre-launch.
-
-**Action:** Reply A, B, or C.
----
-```
-
-## Features
-
-### Master Prompt Sieve
-Transform open-ended questions into actionable multiple-choice options with impact analysis.
-
-### Resource Tracker
-Monitor token consumption, context window utilization, and session costs.
-
-### Agent Orchestrator
-Pre-built agents for specialized tasks (master-architect, resource-guardian, etc.)
+[![Tests](https://img.shields.io/badge/tests-157%20passing-brightgreen.svg)]()
 
 ## Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/mrsarac/cc-aqt-master.git
 cd cc-aqt-master
-
-# Install dependencies
 npm install
-
-# Build
 npm run build
-
-# Link globally
 npm link
 ```
 
-## Usage
+## Quick Start
 
-### Initialize Project
-```bash
-aqt init
-```
+### Track Token Usage
 
-### Track Resource Usage
 ```bash
-# Show current session metrics
+# Show token usage for current project
 aqt track
 
-# Watch mode
-aqt track --watch
+# List all Claude Code projects
+aqt track -l
+
+# Watch mode (live updates)
+aqt track -w
 
 # Export to JSON
-aqt track --export metrics.json
+aqt track -e usage.json
+
+# Show last 10 sessions
+aqt track -n 10
 ```
 
-### Refine Questions
+### Initialize Project
+
 ```bash
-# Run a question through the sieve
-aqt sieve "Which authentication method should I use?"
+# Interactive setup
+aqt init
 
-# With project context
-aqt sieve --context ./src "How should I structure the API?"
+# Quick setup with defaults
+aqt init -y
+
+# Force overwrite existing config
+aqt init -f
 ```
 
-### Manage Agents
+### View Configuration
+
 ```bash
-# List available agents
-aqt agents list
+# Show current config
+aqt config
 
-# Export agent for Claude Code
-aqt agents export master-architect
-
-# Start session with agent
-claude --agents "$(aqt agents export master-architect)"
+# Output as JSON
+aqt config --json
 ```
+
+## Features
+
+### Token Tracking
+
+Monitor Claude Code resource consumption across all projects.
+
+| Metric | Description |
+|--------|-------------|
+| Input Tokens | Tokens sent to Claude |
+| Output Tokens | Tokens received from Claude |
+| Cache Tokens | Tokens served from cache |
+| Cache Hit Ratio | Percentage of cached responses |
+| Cost Estimate | USD cost based on Claude pricing |
+
+**Pricing (Claude 3.5 Sonnet):**
+- Input: $3.00 / 1M tokens
+- Output: $15.00 / 1M tokens
+- Cache Read: $0.30 / 1M tokens
+
+### Session Detection
+
+Automatically detects Claude Code projects from `~/.claude/projects/`.
+
+```bash
+# Auto-detect current git project
+aqt track
+
+# Specify project by name
+aqt track -p myproject
+
+# List available projects
+aqt track -l
+```
+
+### Configuration
+
+Supports multiple config formats via [cosmiconfig](https://github.com/cosmiconfig/cosmiconfig):
+
+- `.aqtrc.json`
+- `.aqtrc.yaml`
+- `.aqtrc.js`
+- `aqt.config.js`
+- `package.json` (`aqt` key)
+
+```json
+{
+  "autoSieve": true,
+  "logLevel": "info",
+  "defaultAgent": "master-architect",
+  "claudeHome": "~/.claude",
+  "tokenAlerts": {
+    "sessionWarning": 150000,
+    "sessionCritical": 180000
+  }
+}
+```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `aqt init` | Initialize AQT in current project |
+| `aqt track` | Track token usage |
+| `aqt config` | Show configuration |
+| `aqt sieve` | Run Master Prompt Sieve (coming soon) |
+| `aqt agents` | Manage agents (coming soon) |
+| `aqt dashboard` | Show metrics dashboard (coming soon) |
 
 ## Architecture
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed system design.
 
 ```
 cc-aqt-master/
 ├── src/
-│   ├── sieve/        # Master Prompt Sieve
-│   ├── tracker/      # Resource Tracking
-│   ├── agents/       # Agent Orchestration
-│   └── cli/          # CLI Commands
-├── docs/
-│   └── ARCHITECTURE.md
-└── tests/
+│   ├── index.ts           # CLI entry point
+│   ├── commands/          # Command implementations
+│   │   ├── init.ts        # aqt init
+│   │   └── track.ts       # aqt track
+│   ├── config/            # Configuration system
+│   │   ├── loader.ts      # cosmiconfig integration
+│   │   └── schema.ts      # zod validation
+│   ├── tracker/           # Token tracking
+│   │   ├── session-detector.ts
+│   │   └── token-analyzer.ts
+│   └── utils/             # Utilities
+│       ├── jsonl-parser.ts
+│       └── claude-paths.ts
+├── prompts/               # Master Prompt templates
+│   ├── master-architect.md
+│   ├── anti-patterns.md
+│   └── scenarios/
+├── tests/                 # 157 tests
+└── docs/
+    ├── ARCHITECTURE.md
+    └── PRD.md
+```
+
+## Master Prompt Sieve (Preview)
+
+Transform vague questions into actionable decisions:
+
+```
+Raw: "What database should I use?"
+
+Refined:
+┌─────────────────────────────────────────────────────────────┐
+│ DATABASE SELECTION                                          │
+├─────────────────────────────────────────────────────────────┤
+│ Context: Node.js MVP, no existing database, Docker setup    │
+│                                                             │
+│ Options:                                                    │
+│ A) SQLite     - Zero config, file-based      [Low effort]  │
+│ B) PostgreSQL - Docker service, production   [Medium]      │
+│ C) In-memory  - Testing only                 [Temporary]   │
+│                                                             │
+│ Recommendation: A for MVP, migrate to B pre-launch         │
+│                                                             │
+│ Reply: A, B, or C                                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+See [prompts/README.md](prompts/README.md) for the full prompt system.
+
+## Development
+
+```bash
+# Run tests
+npm test
+
+# Watch mode
+npm run dev
+
+# Type check
+npm run typecheck
+
+# Build
+npm run build
 ```
 
 ## Roadmap
 
-- [x] Architecture document
-- [ ] Phase 1: Foundation (CLI skeleton, config system)
-- [ ] Phase 2: Resource Tracker MVP
-- [ ] Phase 3: Master Prompt Sieve Core
-- [ ] Phase 4: Agent System
+### Sprint 1: Foundation ✅ Complete
+
+- [x] CLI skeleton with Commander.js
+- [x] Configuration system (cosmiconfig + zod)
+- [x] JSONL parser for Claude logs
+- [x] Cross-platform Claude path detection
+- [x] `aqt init` command
+- [x] `aqt track` command with watch/export
+
+### Sprint 2: Master Prompt Sieve (Planned)
+
+- [ ] Intent detection
+- [ ] Question refinement engine
+- [ ] Option generation with impact analysis
+- [ ] `aqt sieve` command
+
+### Sprint 3: Agent System (Planned)
+
+- [ ] Agent JSON schema
+- [ ] Agent registry
+- [ ] Pre-built agents (master-architect, resource-guardian)
+- [ ] `aqt agents` command
+
+### Sprint 4: Dashboard (Planned)
+
+- [ ] Real-time context monitoring
+- [ ] Historical trends
+- [ ] Alert system
+- [ ] `aqt dashboard` command
 
 ## Contributing
 
-Contributions welcome! Please read our contributing guidelines first.
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing`)
+5. Open Pull Request
 
 ## License
 
@@ -149,4 +245,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-*Built with love by [NeuraByte Labs](https://neurabytelabs.com)*
+Built by [NeuraByte Labs](https://neurabytelabs.com)
