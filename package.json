@@ -8,7 +8,7 @@
     "aqt": "dist/index.js"
   },
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --format=esm --external:chalk --external:commander --external:ora --external:zod",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --format=esm --external:chalk --external:commander --external:ora --external:zod --external:cosmiconfig",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest",

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mrsarac/cc-aqt-master/main/schemas/aqtrc.schema.json",
+  "autoSieve": true,
+  "logLevel": "info",
+  "defaultAgent": "master-architect",
+  "tokenAlerts": {
+    "sessionWarning": 150000,
+    "sessionCritical": 180000
+  }
+}
