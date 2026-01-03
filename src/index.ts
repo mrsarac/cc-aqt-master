@@ -13,6 +13,7 @@ import {
   type AQTConfig,
   type ConfigLoadResult,
 } from './config/index.js';
+import { initCommand } from './commands/index.js';
 
 const program = new Command();
 
@@ -64,19 +65,19 @@ program
   .command('init')
   .description('Initialize AQT in current project')
   .option('-y, --yes', 'Skip prompts, use defaults')
-  .action(async (_options) => {
-    console.log(chalk.green('Initializing AQT...'));
-
-    if (globalConfig?.filepath) {
-      console.log(
-        chalk.yellow(`Config already exists at: ${globalConfig.filepath}`)
-      );
-      console.log(chalk.gray('Use --force to overwrite'));
-      return;
+  .option('-f, --force', 'Overwrite existing configuration')
+  .action(async (options) => {
+    try {
+      await initCommand({
+        yes: options.yes,
+        force: options.force,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
     }
-
-    console.log(chalk.yellow('TODO: Implement init command'));
-    console.log(chalk.gray('Will create .aqtrc.json with default settings'));
   });
 
 // Track command
