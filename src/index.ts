@@ -64,8 +64,7 @@ program
   .command('init')
   .description('Initialize AQT in current project')
   .option('-y, --yes', 'Skip prompts, use defaults')
-  .action(async (options) => {
-    const config = globalConfig?.config;
+  .action(async (_options) => {
     console.log(chalk.green('Initializing AQT...'));
 
     if (globalConfig?.filepath) {
@@ -106,7 +105,7 @@ program
   .command('sieve <question>')
   .description('Run a question through the Master Prompt Sieve')
   .option('-c, --context <path>', 'Additional context path')
-  .action(async (question, options) => {
+  .action(async (question, _options) => {
     const config = globalConfig?.config;
 
     console.log(chalk.magenta('Master Prompt Sieve'));

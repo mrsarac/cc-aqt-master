@@ -11,7 +11,7 @@
  * - package.json (aqt key)
  */
 
-import { cosmiconfig, CosmiconfigResult } from 'cosmiconfig';
+import { cosmiconfig } from 'cosmiconfig';
 import { AQTConfigSchema, type AQTConfig } from './schema.js';
 import { ZodError } from 'zod';
 
