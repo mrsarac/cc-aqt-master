@@ -13,7 +13,7 @@ import {
   type AQTConfig,
   type ConfigLoadResult,
 } from './config/index.js';
-import { initCommand } from './commands/index.js';
+import { initCommand, trackCommand } from './commands/index.js';
 
 const program = new Command();
 
@@ -83,22 +83,29 @@ program
 // Track command
 program
   .command('track')
-  .description('Track Claude Code resource usage')
+  .description('Track Claude Code token usage')
+  .option('-p, --project <name>', 'Project to analyze (auto-detects if not specified)')
+  .option('-n, --sessions <number>', 'Number of sessions to show (default: 5)', '5')
   .option('-w, --watch', 'Watch mode for live updates')
-  .option('-e, --export <file>', 'Export metrics to JSON file')
-  .option('-p, --project <path>', 'Project path to analyze')
+  .option('-e, --export <file>', 'Export usage data to JSON file')
+  .option('-l, --list', 'List all available projects')
   .action(async (options) => {
-    const config = globalConfig?.config;
-
-    console.log(chalk.blue('Resource Tracker'));
-    console.log(chalk.gray(`Log Level: ${config?.logLevel}`));
-    console.log(
-      chalk.gray(`Token Warning: ${config?.tokenAlerts.sessionWarning}`)
-    );
-
-    console.log(chalk.yellow('TODO: Implement track command'));
-    if (options.watch) console.log(chalk.gray('Watch mode enabled'));
-    if (options.export) console.log(chalk.gray(`Export to: ${options.export}`));
+    try {
+      const config = globalConfig?.config;
+      await trackCommand({
+        project: options.project,
+        sessions: parseInt(options.sessions, 10),
+        watch: options.watch,
+        export: options.export,
+        list: options.list,
+        customHome: config?.claudeHome,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(chalk.red(`Error: ${error.message}`));
+      }
+      process.exit(1);
+    }
   });
 
 // Sieve command
