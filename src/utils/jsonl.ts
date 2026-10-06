@@ -273,6 +273,26 @@ export function* parseJsonlString<T = RawLogEntry>(
 }
 
 /**
+ * Collect usage records from log entries.
+ *
+ * Current Claude Code logs keep usage under `message.usage` and write one
+ * line per content block, so the same API message id can repeat. Count each
+ * message id once (last line wins). Older logs carry a top-level `usage`.
+ */
+export function collectUsage(entries: Iterable<RawLogEntry>): TokenUsage[] {
+  const byId = new Map<string, TokenUsage>();
+  const anonymous: TokenUsage[] = [];
+  for (const entry of entries) {
+    const usage = entry.message?.usage ?? entry.usage;
+    if (!usage) continue;
+    const id = entry.message?.id;
+    if (id) byId.set(id, usage);
+    else anonymous.push(usage);
+  }
+  return [...byId.values(), ...anonymous];
+}
+
+/**
  * Calculate token totals from log entries
  *
  * @example
@@ -288,13 +308,11 @@ export function calculateTokenTotals(entries: RawLogEntry[]): TokenTotals {
   let cacheCreation = 0;
   let cacheRead = 0;
 
-  for (const entry of entries) {
-    if (entry.usage) {
-      input += entry.usage.input_tokens || 0;
-      output += entry.usage.output_tokens || 0;
-      cacheCreation += entry.usage.cache_creation_input_tokens || 0;
-      cacheRead += entry.usage.cache_read_input_tokens || 0;
-    }
+  for (const usage of collectUsage(entries)) {
+    input += usage.input_tokens || 0;
+    output += usage.output_tokens || 0;
+    cacheCreation += usage.cache_creation_input_tokens || 0;
+    cacheRead += usage.cache_read_input_tokens || 0;
   }
 
   // Claude pricing (as of 2024): Sonnet
@@ -329,13 +347,15 @@ export async function calculateTokenTotalsStream(
   let cacheCreation = 0;
   let cacheRead = 0;
 
+  const entries: RawLogEntry[] = [];
   for await (const entry of streamJsonl<RawLogEntry>(filePath, options)) {
-    if (entry.usage) {
-      input += entry.usage.input_tokens || 0;
-      output += entry.usage.output_tokens || 0;
-      cacheCreation += entry.usage.cache_creation_input_tokens || 0;
-      cacheRead += entry.usage.cache_read_input_tokens || 0;
-    }
+    entries.push(entry);
+  }
+  for (const usage of collectUsage(entries)) {
+    input += usage.input_tokens || 0;
+    output += usage.output_tokens || 0;
+    cacheCreation += usage.cache_creation_input_tokens || 0;
+    cacheRead += usage.cache_read_input_tokens || 0;
   }
 
   const inputCost = (input / 1_000_000) * 3;

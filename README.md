@@ -1,11 +1,23 @@
-# CC-AQT-MASTER
+# cc-aqt-master
 
-Claude Code Advanced Query Toolkit - Token tracking and intelligent question refinement for Claude Code.
+A command-line tool that reads the local Claude Code session logs and shows token use and estimated cost per session.
 
+**Status: Prototype.** Last verified 2026-10-06 against Claude Code 2.1.291 on Node 22: build and the 158 tests pass, and `aqt track` reads current session logs. Not actively maintained. Known limits: the `typecheck` script reports type errors (the build does not use it), the cost figure uses fixed old per-token prices and is only a rough estimate, and `aqt track -l` shows 0 sessions per project. The `sieve`, `agents` and `dashboard` commands have not been re-verified.
+
+[![CI](https://github.com/mrsarac/cc-aqt-master/actions/workflows/ci.yml/badge.svg)](https://github.com/mrsarac/cc-aqt-master/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
-[![Tests](https://img.shields.io/badge/tests-157%20passing-brightgreen.svg)]()
+
+## Run it
+
+Needs Node 20 or newer. `aqt track` only reads files under `~/.claude/projects`. It sends nothing anywhere.
+
+```bash
+git clone https://github.com/mrsarac/cc-aqt-master.git
+cd cc-aqt-master
+npm install
+npm run build
+node dist/index.js track      # sessions of the project in the current directory
+```
 
 ## Installation
 

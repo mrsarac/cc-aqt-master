@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
-import { execSync } from 'child_process';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+import { execSync } from "child_process";
 
 // Import tracker modules
 import {
@@ -12,7 +12,7 @@ import {
   listAvailableProjects,
   findProject,
   type SessionInfo,
-} from '../src/tracker/session-detector';
+} from "../src/tracker/session-detector";
 
 import {
   calculateCost,
@@ -23,39 +23,43 @@ import {
   formatPercent,
   analyzeLogFile,
   type SessionUsage,
-} from '../src/tracker/token-analyzer';
+} from "../src/tracker/token-analyzer";
 
-describe('Session Detector', () => {
-  describe('encodeProjectPath', () => {
-    it('should encode path by replacing slashes with dashes', () => {
-      expect(encodeProjectPath('/Users/name/project')).toBe('-Users-name-project');
+describe("Session Detector", () => {
+  describe("encodeProjectPath", () => {
+    it("should encode path by replacing slashes with dashes", () => {
+      expect(encodeProjectPath("/Users/name/project")).toBe(
+        "-Users-name-project",
+      );
     });
 
-    it('should handle paths with multiple segments', () => {
-      expect(encodeProjectPath('/a/b/c/d/e')).toBe('-a-b-c-d-e');
+    it("should handle paths with multiple segments", () => {
+      expect(encodeProjectPath("/a/b/c/d/e")).toBe("-a-b-c-d-e");
     });
 
-    it('should handle empty path', () => {
-      expect(encodeProjectPath('')).toBe('');
-    });
-  });
-
-  describe('decodeProjectPath', () => {
-    it('should decode path by replacing dashes with slashes when starts with dash', () => {
-      expect(decodeProjectPath('-Users-name-project')).toBe('/Users/name/project');
-    });
-
-    it('should return unchanged if not starting with dash', () => {
-      expect(decodeProjectPath('some-project-name')).toBe('some-project-name');
-    });
-
-    it('should handle empty string', () => {
-      expect(decodeProjectPath('')).toBe('');
+    it("should handle empty path", () => {
+      expect(encodeProjectPath("")).toBe("");
     });
   });
 
-  describe('getGitRoot', () => {
-    const testDir = join(tmpdir(), 'aqt-git-test-' + Date.now());
+  describe("decodeProjectPath", () => {
+    it("should decode path by replacing dashes with slashes when starts with dash", () => {
+      expect(decodeProjectPath("-Users-name-project")).toBe(
+        "/Users/name/project",
+      );
+    });
+
+    it("should return unchanged if not starting with dash", () => {
+      expect(decodeProjectPath("some-project-name")).toBe("some-project-name");
+    });
+
+    it("should handle empty string", () => {
+      expect(decodeProjectPath("")).toBe("");
+    });
+  });
+
+  describe("getGitRoot", () => {
+    const testDir = join(tmpdir(), "aqt-git-test-" + Date.now());
 
     beforeEach(() => {
       mkdirSync(testDir, { recursive: true });
@@ -67,15 +71,15 @@ describe('Session Detector', () => {
       }
     });
 
-    it('should return null for non-git directory', () => {
+    it("should return null for non-git directory", () => {
       const result = getGitRoot(testDir);
       expect(result).toBe(null);
     });
 
-    it('should return git root for git directory', () => {
+    it("should return git root for git directory", () => {
       // Initialize git repo
       try {
-        execSync('git init', { cwd: testDir, stdio: 'pipe' });
+        execSync("git init", { cwd: testDir, stdio: "pipe" });
         const result = getGitRoot(testDir);
         expect(result).toBe(testDir);
       } catch {
@@ -86,50 +90,50 @@ describe('Session Detector', () => {
   });
 });
 
-describe('Token Analyzer', () => {
-  describe('calculateCost', () => {
-    it('should calculate cost with no cache', () => {
+describe("Token Analyzer", () => {
+  describe("calculateCost", () => {
+    it("should calculate cost with no cache", () => {
       // 1M input tokens = $3, 1M output tokens = $15
       const cost = calculateCost(1_000_000, 1_000_000, 0);
       expect(cost).toBe(18); // $3 + $15
     });
 
-    it('should calculate cost with cache', () => {
+    it("should calculate cost with cache", () => {
       // 1M input + 1M output + 1M cache = $3 + $15 + $0.30
       const cost = calculateCost(1_000_000, 1_000_000, 1_000_000);
       expect(cost).toBe(18.3);
     });
 
-    it('should handle zero tokens', () => {
+    it("should handle zero tokens", () => {
       expect(calculateCost(0, 0, 0)).toBe(0);
     });
 
-    it('should calculate small token amounts', () => {
+    it("should calculate small token amounts", () => {
       // 1000 input = $0.003, 1000 output = $0.015
       const cost = calculateCost(1000, 1000, 0);
       expect(cost).toBeCloseTo(0.018, 5);
     });
   });
 
-  describe('calculateCacheHitRatio', () => {
-    it('should return 0 for no tokens', () => {
+  describe("calculateCacheHitRatio", () => {
+    it("should return 0 for no tokens", () => {
       expect(calculateCacheHitRatio(0, 0)).toBe(0);
     });
 
-    it('should return 0 for no cache', () => {
+    it("should return 0 for no cache", () => {
       expect(calculateCacheHitRatio(1000, 0)).toBe(0);
     });
 
-    it('should return 0.5 for 50% cache', () => {
+    it("should return 0.5 for 50% cache", () => {
       expect(calculateCacheHitRatio(500, 500)).toBe(0.5);
     });
 
-    it('should return 1 for all cache', () => {
+    it("should return 1 for all cache", () => {
       expect(calculateCacheHitRatio(0, 1000)).toBe(1);
     });
   });
 
-  describe('formatSessionLabel', () => {
+  describe("formatSessionLabel", () => {
     it('should format today as "Today HH:MM"', () => {
       const now = new Date();
       const label = formatSessionLabel(now);
@@ -144,53 +148,53 @@ describe('Token Analyzer', () => {
     });
 
     it('should format older dates as "Mon DD HH:MM"', () => {
-      const oldDate = new Date('2024-01-15T14:30:00');
+      const oldDate = new Date("2024-01-15T14:30:00");
       const label = formatSessionLabel(oldDate);
       expect(label).toMatch(/^Jan 15 \d{2}:\d{2}$/);
     });
   });
 
-  describe('formatNumber', () => {
-    it('should format numbers with commas', () => {
-      expect(formatNumber(1000)).toBe('1,000');
-      expect(formatNumber(1000000)).toBe('1,000,000');
+  describe("formatNumber", () => {
+    it("should format numbers with commas", () => {
+      expect(formatNumber(1000)).toBe("1,000");
+      expect(formatNumber(1000000)).toBe("1,000,000");
     });
 
-    it('should handle small numbers', () => {
-      expect(formatNumber(0)).toBe('0');
-      expect(formatNumber(999)).toBe('999');
-    });
-  });
-
-  describe('formatCost', () => {
-    it('should format small costs with 4 decimals', () => {
-      expect(formatCost(0.001)).toBe('$0.0010');
-      expect(formatCost(0.0099)).toBe('$0.0099');
-    });
-
-    it('should format larger costs with 2 decimals', () => {
-      expect(formatCost(1.23)).toBe('$1.23');
-      expect(formatCost(0.01)).toBe('$0.01');
+    it("should handle small numbers", () => {
+      expect(formatNumber(0)).toBe("0");
+      expect(formatNumber(999)).toBe("999");
     });
   });
 
-  describe('formatPercent', () => {
-    it('should format as percentage', () => {
-      expect(formatPercent(0)).toBe('0%');
-      expect(formatPercent(0.5)).toBe('50%');
-      expect(formatPercent(1)).toBe('100%');
+  describe("formatCost", () => {
+    it("should format small costs with 4 decimals", () => {
+      expect(formatCost(0.001)).toBe("$0.0010");
+      expect(formatCost(0.0099)).toBe("$0.0099");
     });
 
-    it('should round to nearest integer', () => {
-      expect(formatPercent(0.333)).toBe('33%');
-      expect(formatPercent(0.666)).toBe('67%');
+    it("should format larger costs with 2 decimals", () => {
+      expect(formatCost(1.23)).toBe("$1.23");
+      expect(formatCost(0.01)).toBe("$0.01");
+    });
+  });
+
+  describe("formatPercent", () => {
+    it("should format as percentage", () => {
+      expect(formatPercent(0)).toBe("0%");
+      expect(formatPercent(0.5)).toBe("50%");
+      expect(formatPercent(1)).toBe("100%");
+    });
+
+    it("should round to nearest integer", () => {
+      expect(formatPercent(0.333)).toBe("33%");
+      expect(formatPercent(0.666)).toBe("67%");
     });
   });
 });
 
-describe('Log File Analysis', () => {
-  const testDir = join(tmpdir(), 'aqt-log-test-' + Date.now());
-  const testLogFile = join(testDir, 'test-session.jsonl');
+describe("Log File Analysis", () => {
+  const testDir = join(tmpdir(), "aqt-log-test-" + Date.now());
+  const testLogFile = join(testDir, "test-session.jsonl");
 
   beforeEach(() => {
     mkdirSync(testDir, { recursive: true });
@@ -202,17 +206,17 @@ describe('Log File Analysis', () => {
     }
   });
 
-  it('should analyze a log file with usage data', async () => {
+  it("should analyze a log file with usage data", async () => {
     // Create test log file
     const entries = [
       {
-        type: 'user',
-        timestamp: '2024-12-01T10:00:00Z',
-        session_id: 'test-session-1',
+        type: "user",
+        timestamp: "2024-12-01T10:00:00Z",
+        session_id: "test-session-1",
       },
       {
-        type: 'assistant',
-        timestamp: '2024-12-01T10:01:00Z',
+        type: "assistant",
+        timestamp: "2024-12-01T10:01:00Z",
         usage: {
           input_tokens: 1000,
           output_tokens: 500,
@@ -221,12 +225,12 @@ describe('Log File Analysis', () => {
         },
       },
       {
-        type: 'user',
-        timestamp: '2024-12-01T10:02:00Z',
+        type: "user",
+        timestamp: "2024-12-01T10:02:00Z",
       },
       {
-        type: 'assistant',
-        timestamp: '2024-12-01T10:03:00Z',
+        type: "assistant",
+        timestamp: "2024-12-01T10:03:00Z",
         usage: {
           input_tokens: 2000,
           output_tokens: 1000,
@@ -236,12 +240,12 @@ describe('Log File Analysis', () => {
       },
     ];
 
-    const logContent = entries.map((e) => JSON.stringify(e)).join('\n');
+    const logContent = entries.map((e) => JSON.stringify(e)).join("\n");
     writeFileSync(testLogFile, logContent);
 
     const usage = await analyzeLogFile(testLogFile);
 
-    expect(usage.sessionId).toBe('test-session-1');
+    expect(usage.sessionId).toBe("test-session-1");
     expect(usage.inputTokens).toBe(3000); // 1000 + 2000
     expect(usage.outputTokens).toBe(1500); // 500 + 1000
     expect(usage.cacheCreation).toBe(150); // 100 + 50
@@ -251,8 +255,51 @@ describe('Log File Analysis', () => {
     expect(usage.duration).toBe(3 * 60 * 1000); // 3 minutes in ms
   });
 
-  it('should handle empty log file', async () => {
-    writeFileSync(testLogFile, '');
+  it("should read message.usage and count a repeated message id once", async () => {
+    const usage1 = {
+      input_tokens: 10,
+      output_tokens: 20,
+      cache_creation_input_tokens: 30,
+      cache_read_input_tokens: 40,
+    };
+    const entries = [
+      { type: "user", timestamp: "2026-10-01T10:00:00Z", sessionId: "s-new" },
+      // Claude Code writes one line per content block; same message id repeats
+      {
+        type: "assistant",
+        timestamp: "2026-10-01T10:00:01Z",
+        sessionId: "s-new",
+        message: { id: "msg_1", usage: usage1 },
+      },
+      {
+        type: "assistant",
+        timestamp: "2026-10-01T10:00:02Z",
+        sessionId: "s-new",
+        message: { id: "msg_1", usage: usage1 },
+      },
+      {
+        type: "assistant",
+        timestamp: "2026-10-01T10:00:03Z",
+        sessionId: "s-new",
+        message: { id: "msg_2", usage: usage1 },
+      },
+    ];
+    writeFileSync(
+      testLogFile,
+      entries.map((e) => JSON.stringify(e)).join("\n"),
+    );
+
+    const usage = await analyzeLogFile(testLogFile);
+
+    expect(usage.sessionId).toBe("s-new");
+    expect(usage.inputTokens).toBe(20);
+    expect(usage.outputTokens).toBe(40);
+    expect(usage.cacheCreation).toBe(60);
+    expect(usage.cacheRead).toBe(80);
+  });
+
+  it("should handle empty log file", async () => {
+    writeFileSync(testLogFile, "");
 
     const usage = await analyzeLogFile(testLogFile);
 
@@ -261,13 +308,13 @@ describe('Log File Analysis', () => {
     expect(usage.messageCount).toBe(0);
   });
 
-  it('should handle log file with no usage data', async () => {
+  it("should handle log file with no usage data", async () => {
     const entries = [
-      { type: 'user', timestamp: '2024-12-01T10:00:00Z' },
-      { type: 'assistant', timestamp: '2024-12-01T10:01:00Z' },
+      { type: "user", timestamp: "2024-12-01T10:00:00Z" },
+      { type: "assistant", timestamp: "2024-12-01T10:01:00Z" },
     ];
 
-    const logContent = entries.map((e) => JSON.stringify(e)).join('\n');
+    const logContent = entries.map((e) => JSON.stringify(e)).join("\n");
     writeFileSync(testLogFile, logContent);
 
     const usage = await analyzeLogFile(testLogFile);
@@ -278,7 +325,7 @@ describe('Log File Analysis', () => {
   });
 });
 
-describe('Track Command Integration', () => {
+describe("Track Command Integration", () => {
   // These tests verify the track command works as expected
   // We use a mock claude home directory with test data
   // Note: customHome IS the claude home (e.g., ~/.claude), not a parent dir
@@ -291,9 +338,15 @@ describe('Track Command Integration', () => {
   let projectDir: string;
 
   beforeEach(() => {
-    testHome = join(tmpdir(), 'aqt-track-test-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+    testHome = join(
+      tmpdir(),
+      "aqt-track-test-" +
+        Date.now() +
+        "-" +
+        Math.random().toString(36).slice(2),
+    );
     // Use -Users-name-testproject which decodes to /Users/name/testproject -> basename 'testproject'
-    projectDir = join(testHome, 'projects', '-Users-name-testproject');
+    projectDir = join(testHome, "projects", "-Users-name-testproject");
     mkdirSync(projectDir, { recursive: true });
   });
 
@@ -303,48 +356,48 @@ describe('Track Command Integration', () => {
     }
   });
 
-  it('should list projects from custom home', () => {
+  it("should list projects from custom home", () => {
     // Create a mock log file
-    const logFile = join(projectDir, '2024-12-01T10-00-00.jsonl');
+    const logFile = join(projectDir, "2024-12-01T10-00-00.jsonl");
     writeFileSync(
       logFile,
       JSON.stringify({
-        type: 'user',
-        timestamp: '2024-12-01T10:00:00Z',
-        session_id: 'test-1',
-      })
+        type: "user",
+        timestamp: "2024-12-01T10:00:00Z",
+        session_id: "test-1",
+      }),
     );
 
     // Use statically imported listAvailableProjects
     const projects = listAvailableProjects(testHome);
 
     expect(projects.length).toBe(1);
-    expect(projects[0].id).toBe('-Users-name-testproject');
-    expect(projects[0].name).toBe('testproject'); // basename of decoded path
+    expect(projects[0].id).toBe("-Users-name-testproject");
+    expect(projects[0].name).toBe("testproject"); // basename of decoded path
   });
 
-  it('should find project by name', () => {
+  it("should find project by name", () => {
     // Create a mock log file
-    const logFile = join(projectDir, 'session.jsonl');
+    const logFile = join(projectDir, "session.jsonl");
     writeFileSync(
       logFile,
       JSON.stringify({
-        type: 'user',
-        timestamp: '2024-12-01T10:00:00Z',
-      })
+        type: "user",
+        timestamp: "2024-12-01T10:00:00Z",
+      }),
     );
 
     // Use statically imported findProject - searches by partial name match
-    const project = findProject('testproject', testHome);
+    const project = findProject("testproject", testHome);
 
     expect(project).not.toBe(null);
-    expect(project?.projectName).toBe('testproject');
+    expect(project?.projectName).toBe("testproject");
     expect(project?.logFiles.length).toBe(1);
   });
 
-  it('should return null for non-existent project', () => {
+  it("should return null for non-existent project", () => {
     // Use statically imported findProject
-    const project = findProject('non-existent', testHome);
+    const project = findProject("non-existent", testHome);
 
     expect(project).toBe(null);
   });

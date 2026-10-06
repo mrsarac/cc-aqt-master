@@ -123,12 +123,15 @@ export interface RawLogEntry {
   timestamp?: string;
   content?: string;
   message?: {
+    id?: string;
     role?: string;
-    content?: string;
+    content?: unknown;
+    usage?: TokenUsage;
   };
   usage?: TokenUsage;
   model?: string;
   session_id?: string;
+  sessionId?: string;
   name?: string;
   input?: Record<string, unknown>;
   result?: string;

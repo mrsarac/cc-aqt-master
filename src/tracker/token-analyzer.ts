@@ -9,6 +9,7 @@ import {
   calculateTokenTotalsStream,
   extractSessionSummaries,
   readJsonl,
+  collectUsage,
   type RawLogEntry,
   type TokenTotals,
 } from '../utils/jsonl.js';
@@ -146,8 +147,8 @@ export async function analyzeLogFile(logFile: string): Promise<SessionUsage> {
     }
 
     // Get session ID from first entry that has it
-    if (!sessionId && entry.session_id) {
-      sessionId = entry.session_id;
+    if (!sessionId && (entry.session_id || entry.sessionId)) {
+      sessionId = (entry.session_id || entry.sessionId) as string;
     }
 
     // Count messages
@@ -155,13 +156,14 @@ export async function analyzeLogFile(logFile: string): Promise<SessionUsage> {
       messageCount++;
     }
 
-    // Accumulate token usage
-    if (entry.usage) {
-      inputTokens += entry.usage.input_tokens || 0;
-      outputTokens += entry.usage.output_tokens || 0;
-      cacheCreation += entry.usage.cache_creation_input_tokens || 0;
-      cacheRead += entry.usage.cache_read_input_tokens || 0;
-    }
+  }
+
+  // Accumulate token usage (each API message counted once)
+  for (const usage of collectUsage(entries)) {
+    inputTokens += usage.input_tokens || 0;
+    outputTokens += usage.output_tokens || 0;
+    cacheCreation += usage.cache_creation_input_tokens || 0;
+    cacheRead += usage.cache_read_input_tokens || 0;
   }
 
   const totalTokens = inputTokens + outputTokens;
