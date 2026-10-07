@@ -4,7 +4,7 @@
 
 | Field | Value |
 |-------|-------|
-| Document Owner | NeuraByte Labs Strategy Board |
+| Document Owner | NeuraByte Labs |
 | Status | Draft |
 | Created | 2026-01-02 |
 | Target Release | Q2 2026 |
@@ -400,4 +400,4 @@ The following JSON defines the "Master Architect" agent that implements the Mast
 
 ---
 
-*This PRD was generated based on the research report "Claude Code Ekosisteminde Ileri Duzey Kaynak Yonetimi ve Sorgu Mimarisi Optimizasyonu" and NeuraByte Labs Strategy Board input.*
+*This PRD was generated based on the research report "Claude Code Ekosisteminde Ileri Duzey Kaynak Yonetimi ve Sorgu Mimarisi Optimizasyonu" and NeuraByte Labs input.*
