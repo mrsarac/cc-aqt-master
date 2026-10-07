@@ -34,3 +34,15 @@ yarn-error.log*
 # Lock files (prefer npm)
 yarn.lock
 pnpm-lock.yaml
+
+# agent / assistant tooling
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.claude/
+.cursor/
+.cursorrules
+.codex/
+.windsurf/
+.agents/
+.opencode/
