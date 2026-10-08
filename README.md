@@ -1,121 +1,73 @@
 # cc-aqt-master
 
-A command-line tool that reads the local Claude Code session logs and shows token use and estimated cost per session.
+A command-line tool that reads your local Claude Code session logs and shows token use and an estimated cost per session.
 
-**Status: Prototype.** Last verified 2026-10-06 against Claude Code 2.1.291 on Node 22: build and the 158 tests pass, and `aqt track` reads current session logs. Not actively maintained. Known limits: the `typecheck` script reports type errors (the build does not use it), the cost figure uses fixed old per-token prices and is only a rough estimate, and `aqt track -l` shows 0 sessions per project. The `sieve`, `agents` and `dashboard` commands have not been re-verified.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.1.0--alpha-lightgrey.svg)](package.json)
 
-[![CI](https://github.com/mrsarac/cc-aqt-master/actions/workflows/ci.yml/badge.svg)](https://github.com/mrsarac/cc-aqt-master/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## Why
 
-## Run it
+Claude Code writes every session to JSONL files under `~/.claude/projects/`, but it does not give you a per-session overview of how many tokens went in and out. `aqt track` reads those files and prints a small table per project: input, output and cache tokens, a cache hit ratio, a rough cost estimate and the message count. It only reads local files and sends nothing anywhere.
 
-Needs Node 20 or newer. `aqt track` only reads files under `~/.claude/projects`. It sends nothing anywhere.
+## Quick start
 
-```bash
-git clone https://github.com/mrsarac/cc-aqt-master.git
-cd cc-aqt-master
-npm install
-npm run build
-node dist/index.js track      # sessions of the project in the current directory
-```
-
-## Installation
+Needs Node 20 or newer.
 
 ```bash
 git clone https://github.com/mrsarac/cc-aqt-master.git
 cd cc-aqt-master
 npm install
 npm run build
-npm link
+node dist/index.js track      # sessions of the git project in the current directory
 ```
 
-## Quick Start
+`aqt track` finds the project from the git root of the current directory. Run it inside a repository you have used with Claude Code, or pass `--project <name>`.
 
-### Track Token Usage
+To get an `aqt` command on your PATH, run `npm link` after the build.
+
+## Usage
+
+### Track token usage
 
 ```bash
-# Show token usage for current project
-aqt track
-
-# List all Claude Code projects
-aqt track -l
-
-# Watch mode (live updates)
-aqt track -w
-
-# Export to JSON
-aqt track -e usage.json
-
-# Show last 10 sessions
-aqt track -n 10
+aqt track                 # current project, last 5 sessions
+aqt track -n 10           # last 10 sessions
+aqt track -p myproject    # a specific project by name
+aqt track -l              # list all Claude Code projects
+aqt track -w              # watch mode (live updates)
+aqt track -e usage.json   # export usage data to JSON
 ```
 
-### Initialize Project
+| Column | Meaning |
+|--------|---------|
+| Input | Input tokens sent to the model |
+| Output | Output tokens returned by the model |
+| Cache | Cache hit ratio: cache-read tokens / (input + cache-read tokens) |
+| Cost | Estimated USD cost (see limits below) |
+| Msgs | Number of messages in the session |
+
+### Set up a config file
 
 ```bash
-# Interactive setup
-aqt init
-
-# Quick setup with defaults
-aqt init -y
-
-# Force overwrite existing config
-aqt init -f
+aqt init       # interactive setup
+aqt init -y    # write defaults without prompts
+aqt init -f    # overwrite an existing config
 ```
 
-### View Configuration
+`aqt init` writes `.aqtrc.json` and `aqt.agents.json` to the current directory and creates or updates its `.gitignore`.
+
+### Show the configuration
 
 ```bash
-# Show current config
 aqt config
-
-# Output as JSON
 aqt config --json
 ```
 
-## Features
+## Configuration
 
-### Token Tracking
+Config is loaded with [cosmiconfig](https://github.com/cosmiconfig/cosmiconfig) from the first of: `package.json` (`aqt` key), `.aqtrc`, `.aqtrc.json`, `.aqtrc.yaml`, `.aqtrc.yml`, `.aqtrc.js`, `.aqtrc.cjs`, `aqt.config.js`, `aqt.config.cjs`. Any file can also be passed with `-c, --config <path>`.
 
-Monitor Claude Code resource consumption across all projects.
-
-| Metric | Description |
-|--------|-------------|
-| Input Tokens | Tokens sent to Claude |
-| Output Tokens | Tokens received from Claude |
-| Cache Tokens | Tokens served from cache |
-| Cache Hit Ratio | Percentage of cached responses |
-| Cost Estimate | USD cost based on Claude pricing |
-
-**Pricing (Claude 3.5 Sonnet):**
-- Input: $3.00 / 1M tokens
-- Output: $15.00 / 1M tokens
-- Cache Read: $0.30 / 1M tokens
-
-### Session Detection
-
-Automatically detects Claude Code projects from `~/.claude/projects/`.
-
-```bash
-# Auto-detect current git project
-aqt track
-
-# Specify project by name
-aqt track -p myproject
-
-# List available projects
-aqt track -l
-```
-
-### Configuration
-
-Supports multiple config formats via [cosmiconfig](https://github.com/cosmiconfig/cosmiconfig):
-
-- `.aqtrc.json`
-- `.aqtrc.yaml`
-- `.aqtrc.js`
-- `aqt.config.js`
-- `package.json` (`aqt` key)
+Defaults:
 
 ```json
 {
@@ -130,131 +82,51 @@ Supports multiple config formats via [cosmiconfig](https://github.com/cosmiconfi
 }
 ```
 
-## Commands
+`claudeHome` is the only setting `aqt track` currently uses. The others are read and shown by `aqt config` but are meant for the unfinished commands below.
 
-| Command | Description |
-|---------|-------------|
-| `aqt init` | Initialize AQT in current project |
-| `aqt track` | Track token usage |
-| `aqt config` | Show configuration |
-| `aqt sieve` | Run Master Prompt Sieve (coming soon) |
-| `aqt agents` | Manage agents (coming soon) |
-| `aqt dashboard` | Show metrics dashboard (coming soon) |
+## How it works
 
-## Architecture
-
-```
-cc-aqt-master/
-├── src/
-│   ├── index.ts           # CLI entry point
-│   ├── commands/          # Command implementations
-│   │   ├── init.ts        # aqt init
-│   │   └── track.ts       # aqt track
-│   ├── config/            # Configuration system
-│   │   ├── loader.ts      # cosmiconfig integration
-│   │   └── schema.ts      # zod validation
-│   ├── tracker/           # Token tracking
-│   │   ├── session-detector.ts
-│   │   └── token-analyzer.ts
-│   └── utils/             # Utilities
-│       ├── jsonl-parser.ts
-│       └── claude-paths.ts
-├── prompts/               # Master Prompt templates
-│   ├── master-architect.md
-│   ├── anti-patterns.md
-│   └── scenarios/
-├── tests/                 # 157 tests
-└── docs/
-    ├── ARCHITECTURE.md
-    └── PRD.md
+```mermaid
+flowchart LR
+    LOGS[("~/.claude/projects/*/*.jsonl")] --> PARSE["JSONL parser<br/>src/utils/jsonl.ts"]
+    GIT["git root of the<br/>current directory"] --> DETECT["Session detector<br/>src/tracker/session-detector.ts"]
+    PARSE --> DETECT
+    DETECT --> ANALYZE["Token analyzer<br/>src/tracker/token-analyzer.ts"]
+    ANALYZE --> OUT["Table in the terminal<br/>or JSON export"]
 ```
 
-## Master Prompt Sieve (Preview)
-
-Transform vague questions into actionable decisions:
-
-```
-Raw: "What database should I use?"
-
-Refined:
-┌─────────────────────────────────────────────────────────────┐
-│ DATABASE SELECTION                                          │
-├─────────────────────────────────────────────────────────────┤
-│ Context: Node.js MVP, no existing database, Docker setup    │
-│                                                             │
-│ Options:                                                    │
-│ A) SQLite     - Zero config, file-based      [Low effort]  │
-│ B) PostgreSQL - Docker service, production   [Medium]      │
-│ C) In-memory  - Testing only                 [Temporary]   │
-│                                                             │
-│ Recommendation: A for MVP, migrate to B pre-launch         │
-│                                                             │
-│ Reply: A, B, or C                                           │
-└─────────────────────────────────────────────────────────────┘
-```
-
-See [prompts/README.md](prompts/README.md) for the full prompt system.
+| Path | What it is |
+|---|---|
+| `src/index.ts` | CLI entry point (Commander) |
+| `src/commands/` | `init` and `track` |
+| `src/config/` | cosmiconfig loader and zod schema |
+| `src/tracker/` | Session detection and token totals |
+| `src/utils/` | JSONL streaming parser, Claude path helpers |
+| `prompts/` | The "Master Prompt Sieve" prompt templates (text only, not wired into the CLI) |
+| `docs/` | Early architecture notes and product requirements |
+| `tests/` | Vitest suite |
 
 ## Development
 
 ```bash
-# Run tests
-npm test
-
-# Watch mode
-npm run dev
-
-# Type check
-npm run typecheck
-
-# Build
-npm run build
+npm test               # vitest (watch mode); use `npx vitest run` for a single run
+npm run build          # esbuild bundle to dist/index.js
+npm run dev            # tsx watch
+npm run typecheck      # tsc --noEmit (currently reports errors, see below)
 ```
 
-## Roadmap
+CI builds the project and runs the test suite on Node 22 for every push to `main` and every pull request.
 
-### Sprint 1: Foundation ✅ Complete
+## Status / limits
 
-- [x] CLI skeleton with Commander.js
-- [x] Configuration system (cosmiconfig + zod)
-- [x] JSONL parser for Claude logs
-- [x] Cross-platform Claude path detection
-- [x] `aqt init` command
-- [x] `aqt track` command with watch/export
+Prototype, version `0.1.0-alpha`, not actively maintained. Last checked on 2026-10-07 on Node 22: `npm run build` succeeds, `npx vitest run` passes 158 tests, and `aqt track` reads current Claude Code session logs.
 
-### Sprint 2: Master Prompt Sieve (Planned)
-
-- [ ] Intent detection
-- [ ] Question refinement engine
-- [ ] Option generation with impact analysis
-- [ ] `aqt sieve` command
-
-### Sprint 3: Agent System (Planned)
-
-- [ ] Agent JSON schema
-- [ ] Agent registry
-- [ ] Pre-built agents (master-architect, resource-guardian)
-- [ ] `aqt agents` command
-
-### Sprint 4: Dashboard (Planned)
-
-- [ ] Real-time context monitoring
-- [ ] Historical trends
-- [ ] Alert system
-- [ ] `aqt dashboard` command
-
-## Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing`)
-5. Open Pull Request
+- The cost figure uses fixed 2024 Claude 3.5 Sonnet prices ($3 input, $15 output, $0.30 cache read per million tokens), whatever model was actually used. Treat it as a rough estimate only.
+- `aqt track -l` lists projects but shows 0 sessions for each.
+- `npm run typecheck` reports unused-import errors. The build does not run it.
+- `aqt sieve`, `aqt agents` and `aqt dashboard` are stubs: they print the current config and a TODO line. The prompt templates for the planned sieve are in `prompts/`.
+- Not published to npm.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
----
-
-Built by [NeuraByte Labs](https://neurabytelabs.com)
+[MIT](LICENSE), Copyright (c) 2026 NeuraByte Labs.
